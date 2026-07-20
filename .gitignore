@@ -1,0 +1,30 @@
+# Visual Studio temporary & cache folders
+.vs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosv
+*.sln.docstates
+
+# Visual Studio build & C++ intermediate outputs
+*.obj
+*.pdb
+*.idb
+*.pch
+*.ipch
+*.sdf
+*.opensdf
+*.aps
+*.tlog
+*.log
+
+# Sensitive personal test data
+C:\ProgramData\FaceUnlock\
+*.dat
