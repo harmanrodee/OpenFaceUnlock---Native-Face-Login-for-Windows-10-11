@@ -93,7 +93,7 @@ When you set up OpenFaceUnlock via `FaceUnlockManager.exe`, `InstallationManager
 
 ### 4. Face Enrollment & Credential Storage
 - `FaceUnlockManager` secures `C:\ProgramData\FaceUnlock` using Win32 ACLs (`System` & `Administrators` = Full Control, `Users` = Read & Execute, directory hidden).
-- User credentials (username & password) are validated against Active Directory / Local SAM using `PrincipalContext.ValidateCredentials()`, serialized to JSON, and encrypted using Windows DPAPI (`DataProtectionScope.LocalMachine`).
+- User credentials (username & password) `PIN not supported` are validated against Active Directory / Local SAM using `PrincipalContext.ValidateCredentials()`, serialized to JSON, and encrypted using Windows DPAPI (`DataProtectionScope.LocalMachine`). `NOTE: use your actual Microsoft Account Password or Local Account Password if you are using local account`
 - During face enrollment, `RegisterFaceForm.cs` spawns `FaceUnlock.exe --mode register` and uses Win32 `SetParent` and `SetWindowLong` to seamlessly embed the C++ preview window (`FaceUnlockRegister`) directly into the WinForms control.
 
 ---
