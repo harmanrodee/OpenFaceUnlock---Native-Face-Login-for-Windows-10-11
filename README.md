@@ -125,6 +125,7 @@ reg add "HKCR\CLSID\{B84B5619-5995-4A1E-9302-F580D593DFA6}" /ve /t REG_SZ /d "Fa
 reg add "HKCR\CLSID\{B84B5619-5995-4A1E-9302-F580D593DFA6}\InprocServer32" /ve /t REG_SZ /d "FaceUnlock.dll" /f
 reg add "HKCR\CLSID\{B84B5619-5995-4A1E-9302-F580D593DFA6}\InprocServer32" /v "ThreadingModel" /t REG_SZ /d "Apartment" /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "DefaultCredentialProvider" /t REG_SZ /d "{B84B5619-5995-4A1E-9302-F580D593DFA6}" /f
+reg add "HKLM\SOFTWARE\FaceUnlock" /v InstallDir /t REG_SZ /d "C:\Program Files\FaceUnlock" /f
 ```
 
 ### 4. Scheduled Task Registration (Startup Warmup)
