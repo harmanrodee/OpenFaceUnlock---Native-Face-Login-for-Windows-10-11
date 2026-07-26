@@ -157,4 +157,4 @@ An automated Inno Setup installer package is available under the **Releases** se
 * **[Microsoft Credential Provider Samples](https://github.com/microsoft/Windows-classic-samples/tree/main/Samples/CredentialProvider):** Base COM `ICredentialProvider` implementation.
 
 ---
-*License: MIT*
+*License: GNU AFFERO GENERAL PUBLIC LICENSE*
