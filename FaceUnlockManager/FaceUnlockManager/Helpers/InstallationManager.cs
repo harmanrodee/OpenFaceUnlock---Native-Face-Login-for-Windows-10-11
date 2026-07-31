@@ -8,7 +8,9 @@ using Microsoft.Win32;
 namespace FaceUnlockManager {
     internal class InstallationManager {
         private const string CredentialProviderGuid = "{B84B5619-5995-4A1E-9302-F580D593DFA6}";
-        private const string faceEmbeddingPath = @"C:\ProgramData\FaceUnlock\embedding.dat";
+        private const string faceEmbeddingPath = @"C:\ProgramData\FaceUnlock\";
+        private const string mainEmbeddingFile = "embedding_main.dat";
+        private const string altEmbeddingFile = "embedding_alt.dat";
 
         public static bool IsRegistered() {
 
@@ -17,8 +19,14 @@ namespace FaceUnlockManager {
                 return key != null;
             }
         }
-        public static bool IsFaceRegistered() {
-            return File.Exists(faceEmbeddingPath);
+        public static bool IsFaceRegistered(string type = "main") {
+            if(type == "main") {
+                return File.Exists(faceEmbeddingPath + mainEmbeddingFile);
+            }
+            else if(type == "alt") {
+                return File.Exists(faceEmbeddingPath + altEmbeddingFile);
+            }
+            return false;
         }
 
 
@@ -87,9 +95,10 @@ namespace FaceUnlockManager {
                         false);
                 }
 
+                DeleteData(faceEmbeddingPath + altEmbeddingFile);
                 if (deleteSaveData) {
                     DeleteData(CredentialStorage.GetCredFilePath());
-                    DeleteData(faceEmbeddingPath);
+                    DeleteData(faceEmbeddingPath + mainEmbeddingFile);
                 }
                 ClearDefaultCredentialProvider();
 

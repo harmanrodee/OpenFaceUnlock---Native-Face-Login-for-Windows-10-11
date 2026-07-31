@@ -16,18 +16,19 @@
 #define MAX_CREDENTIAL_BLOB_SIZE 4096
 #pragma comment(lib, "Shell32.lib")
 
-const std::string arcface_model_path("w600k_mbf.onnx");
-const std::string yunet_model_path("face_detection_yunet_2023mar.onnx");
-const float THRESHOLD_SPOOF = 0.90f;
-const float THRESHOLD_SIMILARITY = 0.51f;
-const int MIN_CONSEC_SIMILAR_FRAMES = 5;
-const int MIN_CONSEC_SIMILAR_FRAMES_REGISTER = 60;
-bool is_run_as_register = false;
-bool is_debug = false;
-std::vector<float> registered_Embedding(512);
-int frame_count = 1;
-int max_frame_count = 150;
-std::vector<BYTE> Credbytes;
+static const float THRESHOLD_SPOOF = 0.90f;
+static const float THRESHOLD_SIMILARITY = 0.51f;
+static const int MIN_CONSEC_SIMILAR_FRAMES = 5;
+static const int MIN_CONSEC_SIMILAR_FRAMES_REGISTER = 60;
+static const std::string arcface_model_path("w600k_mbf.onnx");
+static const std::string yunet_model_path("face_detection_yunet_2023mar.onnx");
+static bool is_run_as_register = false;
+static bool is_debug = false;
+static int frame_count = 1;
+static int max_frame_count = 150;
+static std::string face_type = "main";
+static std::vector <std::vector<float>> saved_embeddings(2);
+static std::vector<BYTE> Credbytes;
 
 enum FaceUnlockState
 {
@@ -229,20 +230,30 @@ static std::vector<cv::Mat> alignFace(
 	return processedFaces;
 }
 
-static bool CheckSimilarity(const std::vector<float>& a, const std::vector<float>& b, int MINIMUM_CONSEC_FRAMES) {
-	float dot = 0.0f;
-	float normA = 0.0f;
-	float normB = 0.0f;
+static bool CheckSimilarity(const std::vector<std::vector<float>>& reference_embeddings, const std::vector<float>& compare_embedding, int MINIMUM_CONSEC_FRAMES) {
+	float score = 0;
 	static int consecutiveSimilarFrames = 0;
+	
+	//i transverse the vector of vector of float
+	for (int i = 0; i < reference_embeddings.size(); i++) {
 
-	for (int i = 0; i < a.size(); i++) {
-		dot += a[i] * b[i];
-		normA += a[i] * a[i];
-		normB += b[i] * b[i];
+		float dot = 0.0f;
+		float normA = 0.0f;
+		float normB = 0.0f;
+
+		//j transvserse the vector of float
+		for (int j = 0; j < reference_embeddings[i].size(); j++) {
+			dot += reference_embeddings[i][j] * compare_embedding[j];
+			normA += reference_embeddings[i][j] * reference_embeddings[i][j];
+			normB += compare_embedding[j] * compare_embedding[j];
+		}
+
+		float calculated_score = dot / (sqrt(normA) * sqrt(normB));
+		if (is_debug) std::cout << "Score : " << calculated_score << std::endl;
+		if (calculated_score > score) {
+			score = calculated_score;
+		}
 	}
-
-	float score = dot / (sqrt(normA) * sqrt(normB));
-	if (is_debug) std::cout << "Score : " << score << std::endl;
 	if (score >= THRESHOLD_SIMILARITY) {
 		consecutiveSimilarFrames++;
 		if (is_debug) std::cout << "Consecutive Similarity found : " << consecutiveSimilarFrames << std::endl;
@@ -263,22 +274,21 @@ static bool CheckSimilarity(const std::vector<float>& a, const std::vector<float
 static bool registerFace(cv::Mat face_mat, std::string path) {
 	int input = cv::waitKey(1);
 
-	static std::vector<float> previousEmbedding;
-	static bool hasPreviousEmbedding = false;
+	static bool hasSavedEmbedding = false;
 
 	std::vector<float> currentEmbedding = getFaceEmbedding(face_mat);
 
-	if (!hasPreviousEmbedding) {
-		previousEmbedding = currentEmbedding;
-		hasPreviousEmbedding = true;
+	if (!hasSavedEmbedding) {
+		saved_embeddings[0] = currentEmbedding;
+		hasSavedEmbedding = true;
 		return false;
 	}
 
-	bool isStable = CheckSimilarity(previousEmbedding, currentEmbedding, MIN_CONSEC_SIMILAR_FRAMES_REGISTER);
-	previousEmbedding = currentEmbedding;
+	bool isStable = CheckSimilarity(saved_embeddings, currentEmbedding, MIN_CONSEC_SIMILAR_FRAMES_REGISTER);
+	saved_embeddings[0] = currentEmbedding;
 
 	if (isStable) {
-		if (!saveEmbedding(currentEmbedding)) {
+		if (!saveEmbedding(currentEmbedding, face_type)) {
 			if (is_debug) std::cout << "Failed to save face embedding automatically" << std::endl;
 			return false;
 		}
@@ -287,8 +297,8 @@ static bool registerFace(cv::Mat face_mat, std::string path) {
 
 			cv::destroyWindow("FaceUnlockRegister");
 
-			hasPreviousEmbedding = false;
-			previousEmbedding.clear();
+			hasSavedEmbedding = false;
+			saved_embeddings.clear();
 
 			return true;
 		}
@@ -313,9 +323,18 @@ static bool checkArguments(int argc, char* argv[])
 	{
 		if (args["--mode"] == "register")
 		{
-			if (args.count("--user") && args.count("--pass")) {
+			if (args.count("--user") && args.count("--pass") && args.count("--type")) {
 				std::string str_user = args["--user"];
 				std::string str_pass = args["--pass"];
+				if (args["--type"] == "main") {
+					face_type = "main";
+				}
+				else if (args["--type"] == "alt") {
+					face_type = "alt";
+				}
+				else {
+					return false;
+				}
 
 				std::wstring wstr_user(str_user.begin(), str_user.end());
 				std::wstring wstr_pass(str_pass.begin(), str_pass.end());
@@ -379,8 +398,8 @@ int main(int argc, char *argv[]) {
 	auto timer = Clock::now();
 	//checking arguments
 	if (!checkArguments(argc, argv)) {
+		std::cout << "checkargsfail\n";
 		return 1;
-		
 	}
 	sendAuthPacket(STATE_STARTING);
 	sendAuthPacket(STATE_OPENING_CAMERA);
@@ -436,7 +455,7 @@ int main(int argc, char *argv[]) {
 	//load faceEmbedding
 	if (!is_run_as_register) {
 		
-		if (!loadEmbedding(registered_Embedding)) {
+		if (!loadEmbedding(saved_embeddings)) {
 			sendAuthPacket(STATE_ERROR_EMBEDDING);
 			return 1;
 		}
@@ -529,7 +548,7 @@ int main(int argc, char *argv[]) {
 			}
 			else {
 				referenceEmbedding = getFaceEmbedding(frame_face);
-				isRecogonized = CheckSimilarity(registered_Embedding, referenceEmbedding, MIN_CONSEC_SIMILAR_FRAMES);
+				isRecogonized = CheckSimilarity(saved_embeddings, referenceEmbedding, MIN_CONSEC_SIMILAR_FRAMES);
 				if (isRecogonized) {
 					if (sendAuthPacket(STATE_AUTH_SUCCESS, isRecogonized)) {
 						if (is_debug) std::cout << "Auth packet sent\n";
@@ -554,12 +573,10 @@ int main(int argc, char *argv[]) {
 		frame_count++;
 	}
 	
-
 	if (!isRecogonized && !is_run_as_register) {
 		if (is_debug) std::cout << "Face Not Recogonized ! \n";
 		sendAuthPacket(STATE_AUTH_FAILED);
 	}
-
 	cap.release();
 	cv::destroyAllWindows();
 

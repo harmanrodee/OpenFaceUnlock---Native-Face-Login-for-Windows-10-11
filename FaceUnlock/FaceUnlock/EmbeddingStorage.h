@@ -14,6 +14,7 @@ bool LoadCredentials(CredentialData& credentials);
 
 bool ReadCredFile(std::vector<BYTE>& bytes);
 
-bool loadEmbedding(std::vector<float>& embedding);
+//bool loadEmbedding(std::vector<float>& embedding);
+bool loadEmbedding(std::vector <std::vector<float>>& embeddings);
 
-bool saveEmbedding(std::vector<float> embedding);
+bool saveEmbedding(std::vector<float> embedding, std::string type = "main");

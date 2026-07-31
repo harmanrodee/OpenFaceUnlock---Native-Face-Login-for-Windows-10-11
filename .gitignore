@@ -9,6 +9,7 @@ obj/
 
 # User-specific files
 *.user
+*.ort
 *.suo
 *.userosv
 *.sln.docstates

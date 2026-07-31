@@ -55,6 +55,7 @@
             ToastIcon = new PictureBox();
             ToastText = new Label();
             PanelMainUI = new Panel();
+            AddAltFace = new Button();
             LabelVersion = new Label();
             PanelPassword.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
@@ -117,6 +118,7 @@
             imageList1.Images.SetKeyName(4, "tick_filled.png");
             imageList1.Images.SetKeyName(5, "cross.png");
             imageList1.Images.SetKeyName(6, "cross_filled.png");
+            imageList1.Images.SetKeyName(7, "adduser.png");
             // 
             // BtnPassword
             // 
@@ -390,6 +392,7 @@
             // 
             // PanelMainUI
             // 
+            PanelMainUI.Controls.Add(AddAltFace);
             PanelMainUI.Controls.Add(PanelStatus);
             PanelMainUI.Controls.Add(BtnRegister);
             PanelMainUI.Controls.Add(BtnRemove);
@@ -398,6 +401,19 @@
             PanelMainUI.Name = "PanelMainUI";
             PanelMainUI.Size = new Size(403, 347);
             PanelMainUI.TabIndex = 14;
+            // 
+            // AddAltFace
+            // 
+            AddAltFace.BackColor = Color.White;
+            AddAltFace.Enabled = false;
+            AddAltFace.ImageKey = "adduser.png";
+            AddAltFace.ImageList = imageList1;
+            AddAltFace.Location = new Point(349, 178);
+            AddAltFace.Name = "AddAltFace";
+            AddAltFace.Size = new Size(45, 45);
+            AddAltFace.TabIndex = 13;
+            AddAltFace.UseVisualStyleBackColor = false;
+            AddAltFace.Click += AddAltFace_Click;
             // 
             // LabelVersion
             // 
@@ -470,5 +486,6 @@
         private Label ToastText;
         private Panel PanelMainUI;
         private Label LabelVersion;
+        private Button AddAltFace;
     }
 }

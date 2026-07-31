@@ -19,6 +19,7 @@ namespace FaceUnlockManager
 
         private enum PassPanelRunOptions {
             RUN_AS_REGISTER,
+            RUN_AS_ALTREGISTER,
             RUN_AS_PASS,
             RUN_AS_DERESGISTER,
             RUN_AS_NONE
@@ -83,13 +84,15 @@ namespace FaceUnlockManager
 
         private void UpdateFormStates() {
             //update face registered status
-            if (InstallationManager.IsFaceRegistered()) {
+            if (InstallationManager.IsFaceRegistered("main")) {
                 PicBoxFaceReg.Image = Properties.Resources.tick;
                 if (!InstallationManager.IsRegistered() && CredentialStorage.isCredSaved()) {
                     InstallationManager.Register();
                 }
+                AddAltFace.Enabled = true;
             }
             else {
+                AddAltFace.Enabled = false;
                 PicBoxFaceReg.Image = Properties.Resources.cross;
                 InstallationManager.Unregister();
             }
@@ -115,7 +118,7 @@ namespace FaceUnlockManager
             LabelVersion.Text = $"Version: {version}";
             LabelAccName.Text = $"User : {localUserName}";
             UpdateFormStates();
-            
+
             // Clean up the FaceUnlockFirstStart scheduled task after it runs once on reboot
             Task.Run(() => {
                 try {
@@ -125,7 +128,8 @@ namespace FaceUnlockManager
                     process.StartInfo.UseShellExecute = true;
                     process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                     process.Start();
-                } catch { }
+                }
+                catch { }
             });
 
             UIHelper.SetRoundedCorners(PanelStatus, 20);
@@ -153,7 +157,14 @@ namespace FaceUnlockManager
                     switch (passPanelRunAs) {
                         case PassPanelRunOptions.RUN_AS_REGISTER: {
                                 CredentialStorage.SaveEncryptedCred(localUserName, enteredPass);
-                                RegisterFaceForm form = new RegisterFaceForm(localUserName, enteredPass, this);
+                                RegisterFaceForm form = new RegisterFaceForm(localUserName, enteredPass, this, "main");
+                                form.FormClosed += RegisterFaceForm_FormClosed;
+                                form.ShowDialog();
+                                break;
+                            }
+                        case PassPanelRunOptions.RUN_AS_ALTREGISTER: {
+                                CredentialStorage.SaveEncryptedCred(localUserName, enteredPass);
+                                RegisterFaceForm form = new RegisterFaceForm(localUserName, enteredPass, this, "alt");
                                 form.FormClosed += RegisterFaceForm_FormClosed;
                                 form.ShowDialog();
                                 break;
@@ -234,9 +245,14 @@ namespace FaceUnlockManager
         }
 
         private void PasswordBox_KeyDown(object sender, KeyEventArgs e) {
-            if(e.KeyCode == Keys.Enter) {
+            if (e.KeyCode == Keys.Enter) {
                 BtnPassPnlConf_Click(sender, e);
             }
+        }
+
+        private void AddAltFace_Click(object sender, EventArgs e) {
+            passPanelRunAs = PassPanelRunOptions.RUN_AS_ALTREGISTER;
+            PanelPassword.Visible = true;
         }
     }
 }

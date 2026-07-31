@@ -40,14 +40,16 @@ namespace FaceUnlockManager {
         private Process faceUnlockProcess = null;
         private IntPtr embeddedWindowHandle = IntPtr.Zero;
         private MainForm mainForm = null;
+        private string savetype;
 
-        public RegisterFaceForm(string username, string password, MainForm form) {
+        public RegisterFaceForm(string username, string password, MainForm form, string savetype) {
             InitializeComponent();
             this.mainForm = form;
             mainForm.Visible = false;
             string upn = UserAuth.GetCurrentUPN();
             this.username = string.IsNullOrEmpty(upn) ? username : upn;
             this.password = password;
+            this.savetype = savetype;
             userAccountType = UserAuth.GetCurrentAccountType();
             UIHelper.SetRoundedCorners(PanelCamera, 10);
             UIHelper.SetRoundedCorners(BtnRegister, 10);
@@ -93,12 +95,21 @@ namespace FaceUnlockManager {
         }
 
         private void FaceUnlockProcess_Exited(object sender, EventArgs e) {
-            if (faceUnlockProcess.ExitCode == 100) {
-                CloseFormSafely();
-                mainForm.ShowToast("Face Registered", "success");
-            }
-            else {
-                CloseFormSafely();
+            switch (faceUnlockProcess.ExitCode) {
+                case 100: {
+                        CloseFormSafely();
+                        mainForm.ShowToast("Face Registered", "success");
+                        break;
+                    }
+                case 0: {
+                        CloseFormSafely();
+                        mainForm.ShowToast("No Stable Face Detected", "error");
+                        break;
+                    }
+                default: {
+                        CloseFormSafely();
+                        break;
+                    }
             }
         }
 
@@ -124,7 +135,7 @@ namespace FaceUnlockManager {
                 else {
                     ProcessStartInfo psi = new ProcessStartInfo();
                     psi.FileName = exePath;
-                    psi.Arguments = $"--mode register --user \"{username}\" --pass \"{password}\"";
+                    psi.Arguments = $"--mode register --user \"{username}\" --pass \"{password}\" --type \"{savetype}\"";
                     psi.WorkingDirectory = installDir;
                     psi.UseShellExecute = false;
                     psi.CreateNoWindow = true;

@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>faceunlock.ico</ApplicationIcon>
-    <Version>0.9.0</Version>
+    <Version>0.9.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

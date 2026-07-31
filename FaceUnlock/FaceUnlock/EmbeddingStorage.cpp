@@ -13,7 +13,7 @@
 #pragma comment(lib, "Crypt32.lib")
 
 static const char HEADER[4] = { 'F', 'A', 'C', 'E' };
-static const std::string embeddingPath = "C:\\ProgramData\\FaceUnlock\\embedding.dat";
+static const std::string embeddingPath = "C:\\ProgramData\\FaceUnlock\\";
 static const std::string dataPath = "C:\\ProgramData\\FaceUnlock";
 
 bool ReadCredFile(std::vector<BYTE>& bytes) {
@@ -44,7 +44,7 @@ bool ReadCredFile(std::vector<BYTE>& bytes) {
 	return true;
 }
 
-bool saveEmbedding(std::vector<float> embedding)
+bool saveEmbedding(std::vector<float> embedding, std::string type)
 {
 	DATA_BLOB inputBlob;
 	DATA_BLOB outputBlob;
@@ -69,7 +69,7 @@ bool saveEmbedding(std::vector<float> embedding)
 	}
 
 	std::filesystem::create_directories(dataPath);
-	std::ofstream file(embeddingPath, std::ios::binary);
+	std::ofstream file(embeddingPath + "embedding_" + type + ".dat", std::ios::binary);
 
 	if (!file.is_open())
 	{
@@ -97,64 +97,70 @@ bool saveEmbedding(std::vector<float> embedding)
 }
 
 
-bool loadEmbedding(std::vector<float>& embedding){
-	std::ifstream file(embeddingPath, std::ios::binary);
+bool loadEmbedding(std::vector <std::vector<float>>& embeddings){
+	std::vector<std::string> files = { "embedding_main.dat", "embedding_alt.dat" };
+	for (int i = 0; i < files.size(); i++) {
+		std::ifstream file(embeddingPath + files[i], std::ios::binary);
 
-	if (!file.is_open())
-	{
-		return false;
+		if (!file.is_open())
+		{
+			continue;
+		}
+
+		char fileHeader[sizeof(HEADER)];
+
+		file.read(fileHeader, sizeof(HEADER));
+
+		if (memcmp(fileHeader, HEADER, sizeof(HEADER)) != 0)
+		{
+			std::cout << "Invalid file\n";
+			return false;
+		}
+
+		DWORD blobSize;
+
+		file.read(
+			reinterpret_cast<char*>(&blobSize),
+			sizeof(blobSize)
+		);
+
+		std::vector<BYTE> encrypted(blobSize);
+
+		file.read(
+			reinterpret_cast<char*>(encrypted.data()),
+			blobSize
+		);
+
+		DATA_BLOB inputBlob;
+		DATA_BLOB outputBlob;
+
+		inputBlob.pbData = encrypted.data();
+		inputBlob.cbData = blobSize;
+
+		if (!CryptUnprotectData(
+			&inputBlob,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			CRYPTPROTECT_LOCAL_MACHINE,
+			&outputBlob))
+		{
+			std::cout << "Decryption failed\n";
+			return false;
+		}
+
+		std::vector<float> embedding( 512 );
+
+		memcpy(
+			embedding.data(),
+			outputBlob.pbData,
+			outputBlob.cbData
+		);
+
+		embeddings.push_back(embedding);
+
+		LocalFree(outputBlob.pbData);
 	}
-
-	char fileHeader[sizeof(HEADER)];
-
-	file.read(fileHeader, sizeof(HEADER));
-
-	if (memcmp(fileHeader, HEADER, sizeof(HEADER)) != 0)
-	{
-		std::cout << "Invalid file\n";
-		return false;
-	}
-
-	DWORD blobSize;
-
-	file.read(
-		reinterpret_cast<char*>(&blobSize),
-		sizeof(blobSize)
-	);
-
-	std::vector<BYTE> encrypted(blobSize);
-
-	file.read(
-		reinterpret_cast<char*>(encrypted.data()),
-		blobSize
-	);
-
-	DATA_BLOB inputBlob;
-	DATA_BLOB outputBlob;
-
-	inputBlob.pbData = encrypted.data();
-	inputBlob.cbData = blobSize;
-
-	if (!CryptUnprotectData(
-		&inputBlob,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		CRYPTPROTECT_LOCAL_MACHINE,
-		&outputBlob))
-	{
-		std::cout << "Decryption failed\n";
-		return false;
-	}
-
-	memcpy(
-		embedding.data(),
-		outputBlob.pbData,
-		outputBlob.cbData
-	);
-
-	LocalFree(outputBlob.pbData);
-
 	return true;
 }
