@@ -353,14 +353,7 @@ HRESULT CSampleCredential::Initialize(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,
     g_activeCredential = this;
     g_faceStatus = L"Starting FaceUnlock...";
     HRESULT hr = S_OK;
-    /*STARTUPINFO si;
-    PROCESS_INFORMATION pi;
 
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
-    si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_HIDE;*/
 
     HANDLE hThread = CreateThread(
         NULL,
@@ -376,33 +369,6 @@ HRESULT CSampleCredential::Initialize(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,
     }
 
     StartFaceUnlockProcess();
-
-    //std::wstring install_dir = getFaceUnlockDir();
-
-    //if (!install_dir.empty()) {
-    //    KillZombieFaceUnlockProcesses();
-    //    std::wstring exe_path = install_dir + L"\\FaceUnlock.exe";
-    //    g_faceStatus = L"Opening camera...";
-    //    std::wstring commandLine = L"--mode login";
-    //    BOOL success = CreateProcess(
-    //        exe_path.c_str(),
-    //        &commandLine[0],
-    //        NULL,
-    //        NULL,
-    //        FALSE,
-    //        CREATE_NO_WINDOW | HIGH_PRIORITY_CLASS,
-    //        NULL,
-    //        install_dir.c_str(),
-    //        &si,
-    //        &pi
-    //    );
-
-    //    if (success) {
-    //        //CloseHandle(pi.hProcess);
-    //        g_hFaceUnlockProcess = pi.hProcess;
-    //        CloseHandle(pi.hThread);
-    //    }
-    //}
     _cpus = cpus;
 
     GUID guidProvider;

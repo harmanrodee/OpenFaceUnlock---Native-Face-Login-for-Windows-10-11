@@ -466,7 +466,7 @@ int main(int argc, char *argv[]) {
 	cv::Mat frame_ml;
 	cv::Mat frame_face;
 	cv::Mat frameRegisterPreview;
-	std::vector<float> referenceEmbedding;
+	std::vector<float> foundEmbedding;
 	bool isRecogonized = false;
 	sendAuthPacket(STATE_RECOGNIZING_FACE);
 
@@ -547,8 +547,8 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			else {
-				referenceEmbedding = getFaceEmbedding(frame_face);
-				isRecogonized = CheckSimilarity(saved_embeddings, referenceEmbedding, MIN_CONSEC_SIMILAR_FRAMES);
+				foundEmbedding = getFaceEmbedding(frame_face);
+				isRecogonized = CheckSimilarity(saved_embeddings, foundEmbedding, MIN_CONSEC_SIMILAR_FRAMES);
 				if (isRecogonized) {
 					if (sendAuthPacket(STATE_AUTH_SUCCESS, isRecogonized)) {
 						if (is_debug) std::cout << "Auth packet sent\n";
