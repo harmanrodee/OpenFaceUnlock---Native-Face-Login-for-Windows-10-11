@@ -1,7 +1,8 @@
 ﻿using System;
-using System.DirectoryServices.AccountManagement;
 using System.Collections.Generic;
+using System.DirectoryServices.AccountManagement;
 using System.Linq;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -37,6 +38,34 @@ namespace FaceUnlockManager {
             return AccountType.Unknown;
         }
 
+        public static class AccountDetector {
+            public static AccountType GetCurrentAccountType() {
+                try {
+                    WindowsIdentity identity = WindowsIdentity.GetCurrent();
+
+                    if (identity == null || identity.User == null)
+                        return AccountType.Unknown;
+
+                    string sid = identity.User.Value;
+
+                    // Microsoft personal accounts use SIDs beginning with S-1-12-1
+                    if (sid.StartsWith("S-1-12-1")) {
+                        return AccountType.MicrosoftAccount;
+                    }
+
+                    // Normal local Windows accounts use S-1-5-21-...
+                    if (sid.StartsWith("S-1-5-21-")) {
+                        return AccountType.Local;
+                    }
+
+                    return AccountType.Unknown;
+                }
+                catch {
+                    return AccountType.Unknown;
+                }
+            }
+        }
+
         public static string GetCurrentUPN() {
             string currentSamUser = Environment.UserName;
 
@@ -65,6 +94,9 @@ namespace FaceUnlockManager {
 
 
         public static async Task<bool> VerifyUsernamePassword(string username, string password) {
+            if (GetCurrentAccountType() == AccountType.MicrosoftAccount) { 
+                return true;
+            }
             return await Task.Run(() => {
                 try {
                     using (PrincipalContext context = new PrincipalContext(ContextType.Machine)) {

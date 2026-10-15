@@ -1,7 +1,8 @@
-using System.IO;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.Logging;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using static FaceUnlockManager.UserAuth;
 
 namespace FaceUnlockManager
 {
@@ -14,7 +15,8 @@ namespace FaceUnlockManager
 
         private const int MAX_PASSWORD_ATTEMPTS = 3;
         private int remainingPassAttempt = MAX_PASSWORD_ATTEMPTS;
-        private string localUserName = Environment.UserName;
+        private string localUserName = string.IsNullOrEmpty(UserAuth.GetCurrentUPN()) ? Environment.UserName : UserAuth.GetCurrentUPN();
+        //private string localUserName = Environment.UserName;
         private string version = Application.ProductVersion;
 
         private enum PassPanelRunOptions {
@@ -113,6 +115,12 @@ namespace FaceUnlockManager
         }
 
         public MainForm() {
+            //AccountType userAccountType = AccountDetector.GetCurrentAccountType();
+
+
+            //UserAuth.AccountType userAccountType = UserAuth.GetCurrentAccountType();
+            //MessageBox.Show(userAccountType.ToString(), "Useraccount type");
+            //MessageBox.Show(string.IsNullOrEmpty(UserAuth.GetCurrentUPN()) ? "Null" : UserAuth.GetCurrentUPN(), "UPN Status");
             TimeBeginPeriod(1);
             InitializeComponent();
             LabelVersion.Text = $"Version: {version}";

@@ -96,10 +96,13 @@ bool saveEmbedding(std::vector<float> embedding, std::string type)
 	return true;
 }
 
-
+//BUG: is loading 4 embeddings
+//so far known that the for loop is only running 2 times
 bool loadEmbedding(std::vector <std::vector<float>>& embeddings){
+	std::cout << "Loaded embeddings{before}: " << embeddings.size() << std::endl;
 	std::vector<std::string> files = { "embedding_main.dat", "embedding_alt.dat" };
 	for (int i = 0; i < files.size(); i++) {
+		std::cout << "Loading embedding file: " << files[i] << std::endl;
 		std::ifstream file(embeddingPath + files[i], std::ios::binary);
 
 		if (!file.is_open())
@@ -162,5 +165,7 @@ bool loadEmbedding(std::vector <std::vector<float>>& embeddings){
 
 		LocalFree(outputBlob.pbData);
 	}
+
+	std::cout << "Loaded embeddings {after}: " << embeddings.size() << std::endl;
 	return true;
 }

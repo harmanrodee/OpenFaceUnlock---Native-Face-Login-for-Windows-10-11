@@ -27,8 +27,9 @@ static bool is_debug = false;
 static int frame_count = 1;
 static int max_frame_count = 150;
 static std::string face_type = "main";
-static std::vector <std::vector<float>> saved_embeddings(2);
+static std::vector <std::vector<float>> saved_embeddings;
 static std::vector<BYTE> Credbytes;
+static bool isWarmedup = false;
 
 enum FaceUnlockState
 {
@@ -233,7 +234,7 @@ static std::vector<cv::Mat> alignFace(
 static bool CheckSimilarity(const std::vector<std::vector<float>>& reference_embeddings, const std::vector<float>& compare_embedding, int MINIMUM_CONSEC_FRAMES) {
 	float score = 0;
 	static int consecutiveSimilarFrames = 0;
-	
+	if (is_debug) std::cout << "refrence embeddings : " << reference_embeddings.size() << std::endl;
 	//i transverse the vector of vector of float
 	for (int i = 0; i < reference_embeddings.size(); i++) {
 
@@ -279,7 +280,7 @@ static bool registerFace(cv::Mat face_mat, std::string path) {
 	std::vector<float> currentEmbedding = getFaceEmbedding(face_mat);
 
 	if (!hasSavedEmbedding) {
-		saved_embeddings[0] = currentEmbedding;
+		saved_embeddings.push_back(currentEmbedding);
 		hasSavedEmbedding = true;
 		return false;
 	}
@@ -371,14 +372,22 @@ static bool checkArguments(int argc, char* argv[])
 			return true;
 		}else if (args["--mode"] == "warmup")
 		{
+			bool arcfaceOk = false;
+			bool yunetOk = false;
 			//This mode helps the windows preload models and dll files from disk to ram for faster opening during startup
-			std::thread arcFaceThread([&]() { loadArcFaceModel(arcface_model_path); });
-			std::thread yunetThread([&]() { loadYuNetModel(yunet_model_path); });
+			std::thread arcFaceThread([&]() { arcfaceOk = loadArcFaceModel(arcface_model_path); });
+			std::thread yunetThread([&]() { yunetOk = loadYuNetModel(yunet_model_path); });
 
 			arcFaceThread.join();
 			yunetThread.join();
-
-			exit(0);
+			if (!arcfaceOk || !yunetOk) {
+				return false;
+			}
+			isWarmedup = true;
+			is_run_as_register = false;
+			max_frame_count = 150;
+			/*exit(0);*/
+			return true;
 		}
 		else {
 			return false;
@@ -414,8 +423,14 @@ int main(int argc, char *argv[]) {
 	//Multithreading Loading Tasks
 	std::thread cameraThread([&]() {
 		for (int i = 0; i < 10; i++) {
-			cap = cv::VideoCapture(0, cv::CAP_DSHOW);
+			cap = cv::VideoCapture(0);
 			if (cap.isOpened()) {
+				cv::Mat testframe;
+				cap >> testframe;
+				if (testframe.empty()) {
+					if (is_debug) std::cout << "Unable to Access Frame" << std::endl;
+					return 1;
+				}
 				cameraOk = true;
 				break;
 			}
@@ -424,18 +439,25 @@ int main(int argc, char *argv[]) {
 	});
 
 	sendAuthPacket(STATE_LOADING_MODELS);
+
+
 	std::thread arcFaceThread([&]() {
 		arcfaceOk = loadArcFaceModel(arcface_model_path);
-	});
+		});
 
 	std::thread yunetThread([&]() {
 		yunetOk = loadYuNetModel(yunet_model_path);
-	});
-
-
-	cameraThread.join();
+		});
 	arcFaceThread.join();
 	yunetThread.join();
+	cameraThread.join();
+
+	//load models
+	if (!arcfaceOk || !yunetOk) {
+		sendAuthPacket(STATE_ERROR_MODEL);
+		return 1;
+	}
+
 	
 	if (!cameraOk) {
 		if (is_debug) std::cout << "Unable to open camera" << std::endl;
@@ -446,11 +468,6 @@ int main(int argc, char *argv[]) {
 
 	PrintTime("Camera Setup", timer);
 
-	//load models
-	if (!arcfaceOk || !yunetOk) {
-		sendAuthPacket(STATE_ERROR_MODEL);
-		return 1;
-	}
 
 	//load faceEmbedding
 	if (!is_run_as_register) {
