@@ -46,7 +46,7 @@ OpenFaceUnlock consists of three cooperating subprojects working in harmony:
                                │ & embeds window via Win32 SetParent
 ┌──────────────────────────────┴──────────────────────────────┐
 │  FaceUnlockManager.exe (C# WinForms UI)                     │
-│  - Encrypts credentials via DPAPI (LocalMachine Scope)       │
+│  - Encrypts credentials via DPAPI (LocalMachine Scope)      │
 │  - Sets ACL permissions on C:\ProgramData\FaceUnlock        │
 │  - Registers FaceUnlock.dll into Windows Registry           │
 └──────────────────────────────┴──────────────────────────────┘
